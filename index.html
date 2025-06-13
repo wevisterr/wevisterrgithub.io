@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viaje Mais - Destinos Incríveis</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f9ff;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2a52be;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2a52be;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background: #2a52be;
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1a3a9e;
+        }
+        #resultado {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            display: none;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        .destination-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .destination-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            height: 200px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌎 Viaje Mais - Descubra o Brasil</h1>
+        
+        <!-- Formulário Completo -->
+        <div class="form-group">
+            <label>Estado de Origem:</label>
+            <select id="estado" onchange="carregarCidades()">
+                <option value="">-- Selecione seu estado --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Cidade de Origem:</label>
+            <select id="cidade" disabled>
+                <option value="">-- Primeiro selecione o estado --</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Destino dos Sonhos:</label>
+            <select id="destino" required onchange="mostrarInfoDestino()">
+                <option value="">-- Escolha seu destino --</option>
+                <option value="foz-do-iguacu">Foz do Iguaçu (PR) - Cataratas</option>
+                <option value="jericoacoara">Jericoacoara (CE) - Dunas e Lagoas</option>
+                <option value="chapada-diamantina">Chapada Diamantina (BA) - Trekking</option>
+                <option value="pantanal">Pantanal (MS/MT) - Safári</option>
+                <option value="ouro-preto">Ouro Preto (MG) - História</option>
+            </select>
+        </div>
+
+        <!-- Área de informações do destino -->
+        <div id="info-destino" class="destination-info" style="display: none;">
+            <h3 id="titulo-destino"></h3>
+            <img id="imagem-destino" class="destination-image" src="" alt="">
+            <p id="descricao-destino"></p>
+        </div>
+
+        <div class="form-group">
+            <label>Meio de Transporte:</label>
+            <select id="transporte" required onchange="verificarLimitePessoas()">
+                <option value="">-- Selecione --</option>
+                <option value="aviao">Avião (máx. 200 pessoas)</option>
+                <option value="onibus">Ônibus (máx. 50 pessoas)</option>
+                <option value="carro">Carro Próprio (máx. 5 pessoas)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Quantidade de Dias:</label>
+            <input type="number" id="dias" min="1" value="3" required>
+        </div>
+
+        <div class="form-group">
+            <label>Quantidade de Pessoas:</label>
+            <input type="number" id="pessoas" min="1" value="1" required onchange="verificarLimitePessoas()">
+            <div id="erro-transporte" class="error">
+                ❌ Limite de passageiros excedido para este transporte!
+            </div>
+        </div>
+
+        <button onclick="calcularPreco()">Calcular Preço</button>
+        
+        <div id="resultado">
+            <h3>✈️ Resumo da Sua Viagem:</h3>
+            <p id="resumo-viagem"></p>
+            <p id="preco-total" style="font-weight: bold; color: #2a52be; font-size: 18px;"></p>
+        </div>
+    </div>
+
+    <script>
+        // Dados dos destinos (com imagens via placeholder)
+        const destinosInfo = {
+            "foz-do-iguacu": {
+                nome: "Foz do Iguaçu (PR)",
+                preco: 2200,
+                imagem: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Iguazu_Cataratas2.jpg/960px-Iguazu_Cataratas2.jpg?20140523002258",
+                descricao: "As Cataratas do Iguaçu são um espetáculo da natureza com 275 quedas d'água. Visite também a Usina de Itaipu e o Marco das Três Fronteiras."
+            },
+            "jericoacoara": {
+                nome: "Jericoacoara (CE)",
+                preco: 2800,
+                imagem: "https://upload.wikimedia.org/wikipedia/commons/5/5c/Anderps_067.JPG",
+                descricao: "Paraíso com dunas de areia branca, lagoas de água cristalina e um dos mais belos pores do sol do mundo, visto da Pedra Furada."
+            },
+            "chapada-diamantina": {
+                nome: "Chapada Diamantina (BA)",
+                preco: 1800,
+                imagem: "https://upload.wikimedia.org/wikipedia/commons/5/5d/Po%C3%A7o_Azul_-_Chapada_Diamantina_-_BA.jpg",
+                descricao: "Parque Nacional com cachoeiras deslumbrantes como a Fumaça (380m de queda), grutas cristalinas e trilhas para todos os níveis."
+            },
+            "pantanal": {
+                nome: "Pantanal (MS/MT)",
+                preco: 3200,
+                imagem: "https://get.pxhere.com/photo/landscape-tree-water-outdoor-marsh-swamp-wilderness-lake-river-pond-environment-stream-reflection-tranquil-scenic-aquatic-reservoir-body-of-water-australia-vegetation-wetland-bog-floodplain-weeds-habitat-loch-ecosystem-tarn-nature-reserve-biome-fish-pond-natural-environment-1109889.jpg",
+                descricao: "Maior planície alagável do mundo, com a maior concentração de fauna das Américas, incluindo onças-pintadas, jacarés e araras-azuis."
+            },
+            "ouro-preto": {
+                nome: "Ouro Preto (MG)",
+                preco: 1500,
+                imagem: "https://upload.wikimedia.org/wikipedia/commons/7/71/Ouro_Preto%2C_Minas_Gerais.jpg",
+                descricao: "Cidade histórica colonial com arquitetura barroca preservada, igrejas ricamente decoradas e o Museu da Inconfidência."
+            }
+        };
+
+        // 1. CARREGA ESTADOS DO BRASIL (API IBGE)
+        async function carregarEstados() {
+            try {
+                const resposta = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados");
+                const estados = await resposta.json();
+                
+                const selectEstado = document.getElementById("estado");
+                estados.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(estado => {
+                    const option = document.createElement("option");
+                    option.value = estado.id;
+                    option.textContent = estado.nome;
+                    selectEstado.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Erro ao carregar estados:", error);
+                alert("Não foi possível carregar os estados. Recarregue a página.");
+            }
+        }
+
+        // 2. CARREGA CIDADES QUANDO SELECIONA UM ESTADO
+        async function carregarCidades() {
+            const estadoId = document.getElementById("estado").value;
+            const selectCidade = document.getElementById("cidade");
+            
+            selectCidade.innerHTML = '<option value="">-- Carregando cidades... --</option>';
+            selectCidade.disabled = true;
+            
+            if (!estadoId) return;
+            
+            try {
+                const resposta = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoId}/municipios`);
+                const cidades = await resposta.json();
+                
+                selectCidade.innerHTML = '<option value="">-- Selecione sua cidade --</option>';
+                
+                cidades.sort((a, b) => a.nome.localeCompare(b.nome)).forEach(cidade => {
+                    const option = document.createElement("option");
+                    option.value = cidade.nome;
+                    option.textContent = cidade.nome;
+                    selectCidade.appendChild(option);
+                });
+                
+                selectCidade.disabled = false;
+            } catch (error) {
+                console.error("Erro ao carregar cidades:", error);
+                selectCidade.innerHTML = '<option value="">-- Erro ao carregar. Tente novamente --</option>';
+            }
+        }
+
+        // 3. MOSTRA INFORMAÇÕES DO DESTINO
+        function mostrarInfoDestino() {
+            const destinoSelecionado = document.getElementById("destino").value;
+            const infoDiv = document.getElementById("info-destino");
+            
+            if (destinoSelecionado && destinosInfo[destinoSelecionado]) {
+                document.getElementById("titulo-destino").textContent = destinosInfo[destinoSelecionado].nome;
+                document.getElementById("imagem-destino").src = destinosInfo[destinoSelecionado].imagem;
+                document.getElementById("descricao-destino").textContent = destinosInfo[destinoSelecionado].descricao;
+                infoDiv.style.display = "block";
+            } else {
+                infoDiv.style.display = "none";
+            }
+        }
+
+        // 4. VERIFICA LIMITE DE PESSOAS POR TRANSPORTE
+        function verificarLimitePessoas() {
+            const transporte = document.getElementById("transporte").value;
+            const pessoas = parseInt(document.getElementById("pessoas").value) || 0;
+            const erroElement = document.getElementById("erro-transporte");
+
+            let limite;
+            switch(transporte) {
+                case "aviao": limite = 200; break;
+                case "onibus": limite = 50; break;
+                case "carro": limite = 5; break;
+                default: limite = Infinity;
+            }
+
+            if (pessoas > limite) {
+                erroElement.style.display = "block";
+                return false;
+            } else {
+                erroElement.style.display = "none";
+                return true;
+            }
+        }
+
+        // 5. CALCULA PREÇO
+        function calcularPreco() {
+            // Validações
+            if (!verificarLimitePessoas()) {
+                alert("Ajuste a quantidade de pessoas para o transporte selecionado!");
+                return;
+            }
+
+            const estado = document.getElementById("estado").selectedOptions[0]?.text || "Não selecionado";
+            const cidade = document.getElementById("cidade").value;
+            const destino = document.getElementById("destino").value;
+            const transporte = document.getElementById("transporte").value;
+            const dias = parseInt(document.getElementById("dias").value) || 1;
+            const pessoas = parseInt(document.getElementById("pessoas").value) || 1;
+
+            if (!cidade || !destino || !transporte) {
+                alert("Preencha todos os campos obrigatórios!");
+                return;
+            }
+
+            // Cálculo do preço
+            const precoBase = destinosInfo[destino]?.preco || 0;
+            let precoFinal = precoBase * pessoas * dias;
+            
+            // Ajustes por transporte
+            switch(transporte) {
+                case "aviao": precoFinal *= 1.5; break;
+                case "carro": precoFinal *= 0.7; break;
+            }
+
+            // Descontos para grupos grandes
+            if (pessoas > 30) precoFinal *= 0.9;
+            if (pessoas > 50) precoFinal *= 0.85;
+
+            // Exibe o resultado
+            document.getElementById("resumo-viagem").innerHTML = `
+                <strong>Origem:</strong> ${cidade} - ${estado}<br>
+                <strong>Destino:</strong> ${destinosInfo[destino].nome}<br>
+                <strong>Transporte:</strong> ${transporte.toUpperCase()} | 
+                <strong>Dias:</strong> ${dias} | 
+                <strong>Pessoas:</strong> ${pessoas}
+                ${pessoas > 30 ? '<br><small>(Desconto para grupo aplicado)</small>' : ''}
+            `;
+            document.getElementById("preco-total").textContent = `Preço total: R$ ${precoFinal.toFixed(2)}`;
+            document.getElementById("resultado").style.display = "block";
+        }
+
+        // Inicia carregamento dos estados
+        window.onload = carregarEstados;
+    </script>
+</body>
+</html>
